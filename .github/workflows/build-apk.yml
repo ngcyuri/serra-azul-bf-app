@@ -1,7 +1,11 @@
-name: Gerar APK Serra Azul BF
+      - name: Limpar arquivos temporários Android
+        run: |
+          find projeto/serraazul-apk-project/app/src/main/res -type f -name "*.tmp" -delete
 
-on:
-  workflow_dispatch:
+      - name: Compilar APK
+        run: |
+          cd projeto/serraazul-apk-project
+          gradle assembleDebug
 
 jobs:
   build:
