@@ -22,53 +22,52 @@ jobs:
           mkdir -p projeto
           unzip -o *.zip -d projeto
 
-      - name: Localizar projeto Android
+      - name: Remover arquivos temporários
         run: |
-          echo "Projetos encontrados:"
-          find projeto -maxdepth 3 -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \)
+          echo "Limpando arquivos temporários..."
+          find projeto -type f -name "*.tmp" -delete
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+          cache-disabled: true
 
-      - name: Remover arquivos temporários
+      - name: Encontrar projeto Android
         run: |
-          echo "Removendo arquivos temporários dos recursos Android..."
-          find projeto -type f -name "*.tmp" -delete
+          echo "Procurando projeto..."
+          find projeto -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \)
 
-      - name: Verificar arquivos de recursos
+      - name: Definir pasta do projeto
         run: |
-          echo "Arquivos temporários restantes:"
-          find projeto -type f -name "*.tmp" || true
+          SETTINGS=$(find projeto -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit)
 
-      - name: Encontrar projeto Gradle
-        run: |
-          GRADLE_PROJECT=$(find projeto -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit)
-
-          if [ -z "$GRADLE_PROJECT" ]; then
-            echo "ERRO: projeto Gradle não encontrado."
+          if [ -z "$SETTINGS" ]; then
+            echo "ERRO: settings.gradle não encontrado."
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$GRADLE_PROJECT")
+          PROJECT_DIR=$(dirname "$SETTINGS")
 
           echo "Projeto encontrado em:"
           echo "$PROJECT_DIR"
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
+      - name: Verificar Gradle
+        run: |
+          gradle --version
+
       - name: Compilar APK
         run: |
           cd "$PROJECT_DIR"
-
-          echo "Iniciando compilação..."
-          gradle assembleDebug --stacktrace
+          echo "Compilando Serra Azul BF..."
+          gradle assembleDebug --stacktrace --no-daemon
 
       - name: Localizar APK
         run: |
-          echo "Procurando APK gerado..."
-          find . -type f -name "*.apk" -print
+          echo "Procurando APK..."
+          find projeto -type f -name "*.apk" -print
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
